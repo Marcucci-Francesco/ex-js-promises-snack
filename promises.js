@@ -11,18 +11,13 @@ const getPostTitle = (id) => {
   return new Promise((resolve, reject) => {
     fetch(`https://dummyjson.com/posts/${id}`)
       .then(response => response.json())
-      .then(data => {
-        if (data.title) {
-          resolve(data.title)
-        } else {
-          reject('Post non trovato')
-        }
-      })
+      .then(post => resolve(post.title))
+      .catch(reject);
   })
 }
 
 getPostTitle(2)
-  .then(title => console.log(title))
+  .then(title => console.log('Titolo del post:', title))
   .catch(error => console.error(error))
 
 //BONUS
@@ -34,20 +29,10 @@ const getPost = (id) => {
       .then(post => {
         fetch(`https://dummyjson.com/users/${post.userId}`)
           .then(response => response.json())
-          .then(user => {
-            const postWithUser = {
-              ...post,
-              user: user
-            }
-            resolve(postWithUser)
-          })
-          .catch(error => {
-            reject(`Errore nel recupero dell\'autore: ${error.message}`)
-          })
+          .then(user => resolve({ ...post, user }))
+          .catch(reject)
       })
-      .catch(error => {
-        reject(`Post non trovato: ${error.message}`)
-      })
+      .catch(reject)
   })
 }
 
@@ -70,11 +55,13 @@ Modifica la funzione in creaLanciaDado(), che restituisce una closure che memori
 
 const lanciaDado = () => {
   return new Promise((resolve, reject) => {
+    console.log('Sto lanciando il dado...');
+
     setTimeout(() => {
       const randomNumber = Math.floor(Math.random() * 6) + 1;
       const stuck = Math.random() < 0.2;
       if (stuck) {
-        reject('Il dado si è incastrato!')
+        reject('Il dado si è incastrato! Riprova!')
       } else {
         resolve(randomNumber)
       }
@@ -83,7 +70,7 @@ const lanciaDado = () => {
 }
 
 lanciaDado()
-  .then(result => console.log(`Risultato: ${result}`))
+  .then(result => console.log(`il dado ha lanciato: ${result}`))
   .catch(error => console.error(error))
 
 
@@ -93,21 +80,21 @@ const creaLanciaDado = () => {
 
   return () => {
     return new Promise((resolve, reject) => {
+      console.log('Sto lanciando il dado...');
+
       setTimeout(() => {
         const randomNumber = Math.floor(Math.random() * 6) + 1;
         const stuck = Math.random() < 0.2;
 
         if (stuck) {
           reject('Il dado si è incastrato!')
-        } else if (randomNumber === ultimoRisultato) {
-          console.log('Incredibile!');
-          resolve(randomNumber)
         } else {
-          console.log(`Nuovo risultato: ${randomNumber}`);
-          resolve(randomNumber);
+          if (randomNumber === ultimoRisultato) {
+            console.log('Incredibile!');
+          }
+          ultimoRisultato = randomNumber;
+          resolve(randomNumber)
         }
-
-        ultimoRisultato = randomNumber;
       }, 3000)
     })
   }
@@ -116,5 +103,10 @@ const creaLanciaDado = () => {
 const lanciaDadoClosure = creaLanciaDado()
 
 lanciaDadoClosure()
-  .then(result => console.log(`Risultato: ${result}`))
+  .then(result => {
+    console.log(`Risultato: ${result}`)
+    lanciaDadoClosure()
+      .then(result => console.log(`Risultato: ${result}`))
+      .catch(error => console.error(error))
+  })
   .catch(error => console.error(error))
